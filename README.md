@@ -1,51 +1,38 @@
-SQLite Web Lens 🔍
+# 🔍 Advanced SQLite Viewer
 
-Hey there! SQLite Web Lens is a super handy, privacy-first tool for anyone who needs to peek into .db or .sqlite files. The best part? Everything happens right in your browser! No need to upload your sensitive data to some random server—we use WebAssembly (WASM) to keep it all local and safe.
+A professional, privacy-first, web-based SQLite database browser. Built entirely with single-file HTML, Tailwind CSS, and WebAssembly (`sql.js`), this tool allows you to examine and export your `.db` or `.sqlite` files completely locally, right from your browser—no backend or uploads required!
 
-🌟 What's Inside?
+## ✨ Key Features
 
-Total Privacy: Your data never leaves your side. We handle everything locally using sql.js, so you're always in control!
+- **🛡️ 100% Local & Private**: All database processing happens within your browser. Your sensitive files never leave your machine.
+- **💎 Sleek, Modern UI**: Engineered with Tailwind CSS for a premium, responsive, and intuitive user experience.
+- **📊 Instant Table Browsing**: Easily navigate through all database tables via a convenient, scrollable sidebar.
+- **🔍 Real-Time Quick Search**: Instantly filter through currently loaded records as you type.
+- **🏗️ Schema Inspector**: View detailed table structures including column names, data types, Primary Keys, and Nullability factors with a single click.
+- **📥 CSV Export**: Seamlessly export any table's data into a `.csv` file for use in Excel or other data analysis software.
+- **⚡ Performance Optimized**: Handles data retrieval gracefully with built-in loading states and optimized DOM rendering.
 
-Instant Tables: Just drop your file in, and we'll show you all your tables and views right away. No setup needed!
+## 🚀 Getting Started
 
-Fast & Smooth: Even if you've got thousands of records, our UI stays snappy and easy to use.
+1. **Launch**: Simply double-click on `index.html` to open it in any modern web browser (Chrome, Firefox, Edge, Safari).
+2. **Load Database**: Click the **"Open New File"** button and select your `.db`, `.sqlite`, or `.sqlite3` file.
+3. **Explore Data**: Click on any table from the left "Available Tables" sidebar to view its contents.
+4. **Analyze & Export**: Use the top search bar to find specific records, inspect the schema using the "Structure" button, or click **"Export CSV"** to save the view.
 
-Quick Search: Need to find something fast? Our real-time search filters through your columns as you type!
+## 🛠️ Technology Stack
 
-Schema Peek: Curious about how your tables are built? Check out data types and primary keys with a single click.
+- **[SQL.js](https://sql.js.org/)**: A WebAssembly (WASM) port of SQLite that powers the local, in-browser database engine.
+- **[Tailwind CSS](https://tailwindcss.com/)**: Delivered via CDN for sleek, beautiful, and consistent UI styling without local setup.
+- **Vanilla JavaScript**: Lightweight, framework-free frontend logic for fast execution.
+- **Google Fonts (Inter)**: Crisp, modern typography optimized for readability.
 
-Easy Export: Want to move your data to Excel? Just hit "Export CSV" and you're good to go!
+## 📁 Project Structure
 
-Looks Great: We built this with Tailwind CSS to make sure it looks clean and works perfectly on any screen.
+```text
+├── index.html       # The complete application (UI, Logic, and Styling)
+└── README.md        # Documentation (You are here)
+```
 
-🚀 Getting Started
+## 📜 License
 
-Fire it up: Just open index.html in your favorite web browser!
-
-Pick your file: Click "Open New File" and grab that .db or .sqlite file you want to see.
-
-Take a look: Click any table on the sidebar to see what’s inside.
-
-Find what you need: Use the search bar to filter through your records in a flash!
-
-Save for later: Hit "Export CSV" if you want to keep a copy of your data for later!
-
-🛠️ Built With
-
-SQL.js - The magic that brings SQLite to your browser!
-
-Tailwind CSS - Keeping things looking sharp and modern.
-
-Inter Font - For text that’s easy on the eyes.
-
-📂 Project Structure
-
-├── index.html       # The whole app in one file!
-└── README.md        # This friendly guide you're reading.
-
-
-📜 License
-
-This project is licensed under the MIT License. Feel free to use it and make it yours!
-
-Built with ❤️ for the developer community. Enjoy!
+This project is licensed under the MIT License. Feel free to fork, modify, and use it in your own projects!
