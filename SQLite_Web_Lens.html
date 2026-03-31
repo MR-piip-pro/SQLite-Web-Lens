@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professional Database Browser</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .table-wrapper { max-height: 65vh; overflow: auto; }
+        .custom-scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .sticky-th { position: sticky; top: 0; z-index: 10; background: #f1f5f9; }
+        .loader { border-top-color: #2563eb; animation: spinner 1s linear infinite; }
+        @keyframes spinner { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="min-h-screen">
+    <div class="max-w-[1600px] mx-auto p-4 lg:p-6">
+        <!-- Header Section -->
+        <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+            <div class="flex items-center gap-4">
+                <div class="p-3 bg-blue-100 rounded-lg text-blue-600">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"></path></svg>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold text-slate-800">Advanced SQLite Viewer</h1>
+                    <p id="fileStatus" class="text-slate-500 text-sm">Waiting for database file selection...</p>
+                </div>
+            </div>
+            
+            <div class="flex gap-3">
+                <input type="file" id="dbFile" accept=".db,.sqlite,.sqlite3" class="hidden">
+                <label for="dbFile" class="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-all cursor-pointer shadow-md hover:shadow-lg">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                    Open New File
+                </label>
+                <button id="exportCsv" class="hidden flex items-center gap-2 px-6 py-2.5 bg-emerald-600 text-white font-semibold rounded-xl hover:bg-emerald-700 transition-all shadow-md">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                    Export CSV
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Workspace -->
+        <div id="workspace" class="hidden grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            <!-- Sidebar (Tables) -->
+            <aside class="lg:col-span-3 space-y-6">
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                    <h3 class="font-bold text-slate-700 mb-4 flex items-center gap-2 border-b pb-2 text-lg">
+                        <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
+                        Available Tables
+                    </h3>
+                    <div id="tablesList" class="space-y-1 max-h-[60vh] overflow-y-auto custom-scrollbar">
+                        <!-- Table items injected here -->
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Data Panel -->
+            <main class="lg:col-span-9 space-y-6">
+                <!-- Controls & Stats -->
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-wrap items-center justify-between gap-4">
+                    <div class="relative flex-grow max-w-md">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                            <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                        </span>
+                        <input type="text" id="searchInput" placeholder="Quick search in current records..." class="block w-full pl-10 pr-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm outline-none">
+                    </div>
+                    
+                    <div class="flex items-center gap-4 text-sm font-medium text-slate-600">
+                        <div class="flex items-center gap-1 bg-slate-100 px-3 py-1.5 rounded-lg">
+                            <span class="text-slate-400">Rows:</span>
+                            <span id="totalRows" class="text-blue-600 font-bold">0</span>
+                        </div>
+                        <div id="schemaInfo" class="cursor-help flex items-center gap-1 bg-slate-100 px-3 py-1.5 rounded-lg border border-transparent hover:border-blue-300">
+                            <span class="text-slate-400">Structure:</span>
+                            <span id="colCount" class="text-blue-600 font-bold">0 Columns</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Table Content Container -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden relative min-h-[500px]">
+                    <div id="loadingOverlay" class="hidden absolute inset-0 bg-white/80 z-20 flex flex-col items-center justify-center">
+                        <div class="loader ease-linear rounded-full border-4 border-t-4 border-slate-100 h-16 w-16 mb-4"></div>
+                        <p class="text-slate-600 font-semibold">Processing data...</p>
+                    </div>
+
+                    <div id="emptyView" class="flex flex-col items-center justify-center h-[500px] text-slate-400">
+                        <svg class="w-20 h-20 mb-4 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                        <p class="text-lg">Select a table from the sidebar to view its content</p>
+                    </div>
+
+                    <div id="dataTableContainer" class="hidden table-wrapper custom-scrollbar">
+                        <table class="w-full text-left text-sm border-collapse">
+                            <thead id="tableHead" class="sticky-th">
+                                <!-- Dynamic Headers -->
+                            </thead>
+                            <tbody id="tableBody" class="divide-y divide-slate-100">
+                                <!-- Dynamic Rows -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Modals (Schema Preview) -->
+    <div id="schemaModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <h4 class="text-xl font-bold text-slate-800">Table Schema Details</h4>
+                <button onclick="document.getElementById('schemaModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div id="schemaContent" class="overflow-x-auto">
+                <!-- Schema Table -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let db = null;
+        let currentTableName = "";
+        let currentRows = [];
+        let currentColumns = [];
+
+        // Initialize SQL.js
+        const config = { locateFile: filename => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.wasm` };
+        
+        initSqlJs(config).then(SQL => {
+            const dbFileInput = document.getElementById('dbFile');
+            
+            dbFileInput.addEventListener('change', async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                document.getElementById('fileStatus').innerHTML = `Active file: <span class="font-mono font-bold text-blue-600">${file.name}</span>`;
+                
+                const buffer = await file.arrayBuffer();
+                try {
+                    db = new SQL.Database(new Uint8Array(buffer));
+                    document.getElementById('workspace').classList.remove('hidden');
+                    loadTableList();
+                } catch (err) {
+                    alert("Error: Could not open database file. Make sure it is a valid SQLite file.");
+                }
+            });
+        });
+
+        function loadTableList() {
+            const listEl = document.getElementById('tablesList');
+            listEl.innerHTML = '';
+            
+            const results = db.exec("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name ASC;");
+            
+            if (results.length > 0) {
+                results[0].values.forEach(row => {
+                    const name = row[0];
+                    const btn = document.createElement('button');
+                    btn.className = "w-full text-left px-4 py-3 rounded-xl flex items-center justify-between group hover:bg-blue-50 transition-all text-slate-600 font-semibold";
+                    btn.innerHTML = `
+                        <span class="truncate">${name}</span>
+                        <svg class="w-4 h-4 text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                    `;
+                    btn.onclick = () => {
+                        // Reset active state
+                        document.querySelectorAll('#tablesList button').forEach(b => b.classList.remove('bg-blue-100', 'text-blue-700', 'ring-1', 'ring-blue-200'));
+                        btn.classList.add('bg-blue-100', 'text-blue-700', 'ring-1', 'ring-blue-200');
+                        fetchTableData(name);
+                    };
+                    listEl.appendChild(btn);
+                });
+            }
+        }
+
+        async function fetchTableData(tableName) {
+            currentTableName = tableName;
+            const overlay = document.getElementById('loadingOverlay');
+            overlay.classList.remove('hidden');
+            
+            setTimeout(() => {
+                try {
+                    const result = db.exec(`SELECT * FROM "${tableName}" LIMIT 2000`); 
+                    
+                    if (result.length > 0) {
+                        currentColumns = result[0].columns;
+                        currentRows = result[0].values;
+                        renderTable(currentColumns, currentRows);
+                        
+                        document.getElementById('totalRows').textContent = currentRows.length;
+                        document.getElementById('colCount').textContent = `${currentColumns.length} Columns`;
+                        document.getElementById('exportCsv').classList.remove('hidden');
+                        document.getElementById('emptyView').classList.add('hidden');
+                        document.getElementById('dataTableContainer').classList.remove('hidden');
+                    } else {
+                        // Empty table handling
+                        const cols = db.exec(`PRAGMA table_info("${tableName}")`)[0].values.map(c => c[1]);
+                        renderTable(cols, []);
+                        document.getElementById('totalRows').textContent = '0';
+                    }
+                } catch (e) {
+                    alert("Data retrieval error: " + e.message);
+                } finally {
+                    overlay.classList.add('hidden');
+                }
+            }, 100);
+        }
+
+        function renderTable(cols, rows) {
+            const head = document.getElementById('tableHead');
+            const body = document.getElementById('tableBody');
+            
+            head.innerHTML = `<tr class="bg-slate-50 border-b border-slate-200 text-left">
+                ${cols.map(c => `<th class="px-6 py-4 text-slate-700 font-bold whitespace-nowrap">${c}</th>`).join('')}
+            </tr>`;
+            
+            body.innerHTML = rows.map(row => `
+                <tr class="hover:bg-blue-50/30 transition-colors">
+                    ${row.map(cell => `<td class="px-6 py-3 text-slate-600 border-b border-slate-100 max-w-xs truncate" title="${cell}">${cell !== null ? cell : '<span class="text-slate-300 italic">NULL</span>'}</td>`).join('')}
+                </tr>
+            `).join('');
+        }
+
+        // Search Logic
+        document.getElementById('searchInput').addEventListener('input', function(e) {
+            const term = e.target.value.toLowerCase();
+            const filtered = currentRows.filter(row => 
+                row.some(cell => String(cell).toLowerCase().includes(term))
+            );
+            renderTable(currentColumns, filtered);
+            document.getElementById('totalRows').textContent = filtered.length;
+        });
+
+        // Schema Preview
+        document.getElementById('schemaInfo').onclick = () => {
+            if (!currentTableName) return;
+            const schema = db.exec(`PRAGMA table_info("${currentTableName}")`)[0];
+            const content = document.getElementById('schemaContent');
+            
+            content.innerHTML = `
+                <table class="w-full text-left border rounded-lg overflow-hidden">
+                    <thead class="bg-slate-50 border-b">
+                        <tr>
+                            <th class="p-3">#</th><th class="p-3">Name</th><th class="p-3">Type</th><th class="p-3">Not Null</th><th class="p-3">PK</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${schema.values.map(row => `
+                            <tr class="border-b">
+                                <td class="p-3 font-mono">${row[0]}</td>
+                                <td class="p-3 font-bold">${row[1]}</td>
+                                <td class="p-3 text-blue-600 font-mono">${row[2]}</td>
+                                <td class="p-3">${row[3] ? 'Yes' : 'No'}</td>
+                                <td class="p-3">${row[5] ? '✅' : '-'}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+            document.getElementById('schemaModal').classList.remove('hidden');
+        };
+
+        // Export to CSV
+        document.getElementById('exportCsv').onclick = () => {
+            if (!currentRows.length) return;
+            
+            let csvContent = currentColumns.join(",") + "\n";
+            currentRows.forEach(row => {
+                csvContent += row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(",") + "\n";
+            });
+            
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", `${currentTableName}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        };
+    </script>
+</body>
+</html>
