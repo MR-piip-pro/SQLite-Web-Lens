@@ -32,7 +32,8 @@ A professional, privacy-first, web-based SQLite database browser. Built entirely
 ├── index.html       # The complete application (UI, Logic, and Styling)
 └── README.md        # Documentation (You are here)
 ```
-## Your site is live at [SQL-Web]([https://mr-piip-pro.github.io/SQLite-Web-Lens/](https://mr-piip-pro.github.io/SQLite-Web-Lens/))
+## Your site 
+is live at [SQL - Web](https://mr-piip-pro.github.io/SQLite-Web-Lens/)
 
 ## 📜 License
 
